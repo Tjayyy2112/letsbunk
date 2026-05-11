@@ -30,14 +30,13 @@ export default function LectureCard({ lecture, periodIndex }) {
 
   // ── always read live from store so % updates instantly ──
   const subjects        = useStore(s => s.subjects);
-  const getLogForDate   = useStore(s => s.getLogForDate);
   const markAttendance  = useStore(s => s.markAttendance);
   const clearAttendance = useStore(s => s.clearAttendance);
 
   // find the subject fresh from store every render
   const subject = subjects.find(s => s.id === lecture.subject?.id) || lecture.subject;
 
-  const log    = getLogForDate(today, periodIndex);
+  const log    = useStore(s => s.attendanceLogs[`${today}-${periodIndex}`]) || null;
   const status = log?.status || null;
   const cfg    = status ? STATUS_CONFIG[status] : null;
 
