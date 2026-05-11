@@ -17,10 +17,13 @@ const SCREENS = {
 };
 
 export default function App() {
-  const { activeTab, loading, error, bootstrap } = useStore();
+  const { activeTab, loading, error, bootstrap, theme } = useStore();
   const Screen = SCREENS[activeTab] || TodayScreen;
 
-  useEffect(() => { bootstrap(); }, []);
+  useEffect(() => { 
+    bootstrap(); 
+    document.documentElement.setAttribute('data-theme', theme);
+  }, []);
 
   if (loading) return (
     <div style={{
@@ -50,7 +53,7 @@ export default function App() {
       <div style={{ fontSize: 40 }}>⚠️</div>
       <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--danger)' }}>Backend not reachable</div>
       <div style={{ fontSize: 12, color: 'var(--text-secondary)', textAlign: 'center' }}>
-        Make sure the backend is running on port 4000 and PostgreSQL is connected.
+        Make sure the backend is running on port 8765 and PostgreSQL is connected.
       </div>
       <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'monospace',
         background: 'var(--card)', padding: '8px 14px', borderRadius: 10 }}>

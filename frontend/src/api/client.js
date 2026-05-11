@@ -15,9 +15,10 @@ export const deleteSubject  = (id, safe=false) =>
 // ── Attendance ────────────────────────────────────────
 export const getLogs        = (params={}) => api.get('/attendance', { params }).then(r => r.data);
 export const markAttendance = (data)      => api.post('/attendance', data).then(r => r.data);
-export const clearAttendance= (subjectId, date) =>
-  api.delete('/attendance', { params: { subjectId, date } }).then(r => r.data);
+export const clearAttendance= (date, periodIndex) =>
+  api.delete('/attendance', { params: { date, periodIndex } }).then(r => r.data);
 export const resetSemester  = ()          => api.delete('/attendance/reset').then(r => r.data);
+export const clearAllData   = ()          => api.delete('/attendance/clear-all').then(r => r.data);
 
 // ── Timetable ─────────────────────────────────────────
 export const getTimetable   = ()        => api.get('/timetable').then(r => r.data);

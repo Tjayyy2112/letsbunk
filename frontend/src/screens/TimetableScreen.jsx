@@ -8,6 +8,42 @@ const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const DAY_FULL = { Mon: 'Monday', Tue: 'Tuesday', Wed: 'Wednesday', Thu: 'Thursday', Fri: 'Friday', Sat: 'Saturday', Sun: 'Sunday' };
 const TODAY_IDX = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][new Date().getDay()];
 
+const getOrdinal = (n) => {
+  const s = ["th", "st", "nd", "rd"];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+};
+
+function parseTimeTo24h(str) {
+  if (!str) return "09:00";
+  if (/^\d{2}:\d{2}$/.test(str)) return str;
+  const match = str.match(/(\d+):(\d+)\s*(AM|PM)/i);
+  if (match) {
+    let [ , h, m, ampm ] = match;
+    h = parseInt(h);
+    if (ampm.toUpperCase() === 'PM' && h < 12) h += 12;
+    if (ampm.toUpperCase() === 'AM' && h === 12) h = 0;
+    return `${h.toString().padStart(2, '0')}:${m}`;
+  }
+  return "09:00";
+}
+
+function formatTimeRange(time24) {
+  const t24 = parseTimeTo24h(time24);
+  const [h, m] = t24.split(':').map(Number);
+  const startD = new Date(); startD.setHours(h, m);
+  const endD = new Date(); endD.setHours(h, m + 50);
+  
+  const fmt = (d) => {
+    let hr = d.getHours();
+    const ampm = hr >= 12 ? 'PM' : 'AM';
+    hr = hr % 12 || 12;
+    const mn = d.getMinutes().toString().padStart(2, '0');
+    return `${hr}:${mn} ${ampm}`;
+  };
+  return `${fmt(startD)} - ${fmt(endD)}`;
+}
+
 export default function TimetableScreen() {
   const { timetable, subjects, addTimetableEntry, deleteTimetableEntry, updateTimetableEntry } = useStore();
 
@@ -16,22 +52,35 @@ export default function TimetableScreen() {
   const [showAdd, setShowAdd] = useState(false);
   const [editEntry, setEditEntry] = useState(null);
   const [form, setForm] = useState({ subjectId: '', time: '', room: '', faculty: '' });
-  const [deleteTarget, setDeleteTarget] = useState(null); // { id, day }
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const activeDay = DAYS[activeDayIdx];
   const entries = timetable[activeDay] || [];
+  // Sort entries by time since time is stored as HH:mm or similar
+  const sortedEntries = [...entries].sort((a, b) => parseTimeTo24h(a.time).localeCompare(parseTimeTo24h(b.time)));
 
   const goLeft  = () => setActiveDayIdx(i => Math.max(0, i - 1));
   const goRight = () => setActiveDayIdx(i => Math.min(DAYS.length - 1, i + 1));
 
   const openAdd = () => {
-    setForm({ subjectId: subjects[0]?.id || '', time: '9:00 AM', room: '', faculty: '' });
+    let nextTime24 = "09:00";
+    if (sortedEntries.length > 0) {
+      const lastEntry = sortedEntries[sortedEntries.length - 1];
+      const last24 = parseTimeTo24h(lastEntry.time);
+      const [h, m] = last24.split(':').map(Number);
+      let nextM = m + 50;
+      let nextH = h + Math.floor(nextM / 60);
+      nextM = nextM % 60;
+      nextTime24 = `${nextH.toString().padStart(2, '0')}:${nextM.toString().padStart(2, '0')}`;
+    }
+    
+    setForm({ subjectId: subjects[0]?.id || '', time: nextTime24, room: '', faculty: '' });
     setEditEntry(null);
     setShowAdd(true);
   };
 
   const openEdit = (entry) => {
-    setForm({ subjectId: entry.subjectId, time: entry.time, room: entry.room, faculty: entry.faculty });
+    setForm({ subjectId: entry.subjectId, time: parseTimeTo24h(entry.time), room: entry.room, faculty: entry.faculty });
     setEditEntry(entry);
     setShowAdd(true);
   };
@@ -68,7 +117,7 @@ export default function TimetableScreen() {
               disabled={activeDayIdx === 0}
               style={{
                 width: 36, height: 36, borderRadius: 12, flexShrink: 0,
-                background: activeDayIdx === 0 ? 'rgba(255,255,255,0.03)' : 'var(--accent-dim)',
+                background: activeDayIdx === 0 ? 'var(--border)' : 'var(--accent-dim)',
                 border: `1px solid ${activeDayIdx === 0 ? 'var(--border)' : 'rgba(142,216,204,0.25)'}`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 cursor: activeDayIdx === 0 ? 'not-allowed' : 'pointer',
@@ -99,7 +148,7 @@ export default function TimetableScreen() {
                   )}
                 </div>
                 <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 3 }}>
-                  {entries.length} class{entries.length !== 1 ? 'es' : ''}
+                  {sortedEntries.length} class{sortedEntries.length !== 1 ? 'es' : ''}
                 </div>
               </motion.div>
             </div>
@@ -111,7 +160,7 @@ export default function TimetableScreen() {
               disabled={activeDayIdx === DAYS.length - 1}
               style={{
                 width: 36, height: 36, borderRadius: 12, flexShrink: 0,
-                background: activeDayIdx === DAYS.length - 1 ? 'rgba(255,255,255,0.03)' : 'var(--accent-dim)',
+                background: activeDayIdx === DAYS.length - 1 ? 'var(--border)' : 'var(--accent-dim)',
                 border: `1px solid ${activeDayIdx === DAYS.length - 1 ? 'var(--border)' : 'rgba(142,216,204,0.25)'}`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 cursor: activeDayIdx === DAYS.length - 1 ? 'not-allowed' : 'pointer',
@@ -138,7 +187,7 @@ export default function TimetableScreen() {
                       ? 'var(--accent)'
                       : d === TODAY_IDX
                         ? 'rgba(142,216,204,0.35)'
-                        : 'rgba(255,255,255,0.1)',
+                        : 'var(--border-strong)',
                   }}
                   transition={{ type: 'spring', damping: 20, stiffness: 300 }}
                   style={{ height: 6, borderRadius: 3 }}
@@ -158,7 +207,7 @@ export default function TimetableScreen() {
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.18 }}
             >
-              {entries.length === 0 ? (
+              {sortedEntries.length === 0 ? (
                 <motion.div
                   style={{
                     textAlign: 'center', padding: '48px 24px',
@@ -180,7 +229,7 @@ export default function TimetableScreen() {
                   </motion.button>
                 </motion.div>
               ) : (
-                entries.map((entry, i) => {
+                sortedEntries.map((entry, i) => {
                   const subject = subjects.find(s => s.id === entry.subjectId);
                   if (!subject) return null;
                   return (
@@ -200,12 +249,15 @@ export default function TimetableScreen() {
                         <div style={{ flex: 1, padding: '16px' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                             <div>
+                              <div style={{ fontSize: 11, fontWeight: 800, color: subject.color, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 4 }}>
+                                {getOrdinal(i + 1)} Period
+                              </div>
                               <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 6 }}>
                                 {subject.icon} {subject.name}
                               </div>
                               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                                 {[
-                                  { Icon: Clock,  val: entry.time },
+                                  { Icon: Clock,  val: formatTimeRange(entry.time) },
                                   { Icon: MapPin, val: entry.room || 'TBD' },
                                   { Icon: User,   val: entry.faculty },
                                 ].map(({ Icon, val }) => (
@@ -268,7 +320,7 @@ export default function TimetableScreen() {
                 setForm(f => ({ ...f, subjectId: e.target.value, faculty: sub?.faculty || f.faculty }));
               }}
               style={{
-                width: '100%', background: '#0D1C19',
+                width: '100%', background: 'var(--card)',
                 border: '1px solid var(--border-strong)',
                 borderRadius: 14, padding: '13px 14px',
                 color: 'var(--text-primary)', fontSize: 14,
@@ -281,21 +333,28 @@ export default function TimetableScreen() {
           </div>
 
           {[
-            { key: 'time',    label: 'Time',    placeholder: '9:00 AM' },
-            { key: 'room',    label: 'Room',    placeholder: 'A101'    },
-            { key: 'faculty', label: 'Faculty', placeholder: 'Dr. Name'},
-          ].map(({ key, label, placeholder }) => (
+            { key: 'time',    label: 'Start Time',    placeholder: '09:00', type: 'time' },
+            { key: '_period', label: 'Period', value: editEntry ? `${getOrdinal(sortedEntries.findIndex(e => e.id === editEntry.id) + 1)} Period (Auto)` : `${getOrdinal(sortedEntries.length + 1)} Period (Auto)`, readOnly: true },
+            { key: 'room',    label: 'Room',    placeholder: 'A101', type: 'text'    },
+            { key: 'faculty', label: 'Faculty', placeholder: 'Dr. Name', type: 'text'},
+          ].map(({ key, label, placeholder, type, value, readOnly }) => (
             <div key={key}>
               <label style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>{label}</label>
               <input
-                value={form[key]}
-                onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
+                type={type || 'text'}
+                value={value !== undefined ? value : form[key]}
+                onChange={e => !readOnly && setForm(f => ({ ...f, [key]: e.target.value }))}
                 placeholder={placeholder}
+                readOnly={readOnly}
                 style={{
-                  width: '100%', background: '#0D1C19',
+                  width: '100%', 
+                  background: readOnly ? 'var(--border)' : 'var(--card)',
                   border: '1px solid var(--border-strong)',
                   borderRadius: 14, padding: '13px 14px',
-                  color: 'var(--text-primary)', fontSize: 14,
+                  color: readOnly ? 'var(--accent)' : 'var(--text-primary)', 
+                  fontSize: 14,
+                  fontWeight: readOnly ? 700 : 400,
+                  colorScheme: 'dark'
                 }}
               />
             </div>
@@ -319,58 +378,35 @@ export default function TimetableScreen() {
       </ModalSheet>
 
       {/* ── Safe Delete Modal ── */}
-      <AnimatePresence>
-        {deleteTarget && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              onClick={() => setDeleteTarget(null)}
-              style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)' }}
-            />
-            <motion.div
-              initial={{ scale: 0.88, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.88, opacity: 0, y: 20 }}
-              transition={{ type: 'spring', damping: 24, stiffness: 340 }}
-              style={{
-                position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
-                zIndex: 301, width: 'calc(100% - 48px)', maxWidth: 320,
-                background: '#0D1C19', border: '1px solid rgba(216,92,99,0.2)',
-                borderRadius: 22, padding: '24px 20px',
-                boxShadow: '0 16px 48px rgba(0,0,0,0.5)',
-              }}
-            >
-              <div style={{ textAlign: 'center', marginBottom: 20 }}>
-                <div style={{ fontSize: 36, marginBottom: 10 }}>🗑️</div>
-                <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 8 }}>
-                  Delete this class?
-                </div>
-                <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-                  <strong style={{ color: 'var(--accent)' }}>Safe Delete</strong> — removes the class from timetable but keeps all attendance history.<br/><br/>
-                  <strong style={{ color: 'var(--danger)' }}>Delete</strong> — removes everything including all past attendance records for this class.
-                </div>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <motion.button whileTap={{ scale: 0.96 }}
-                  onClick={async () => { await deleteTimetableEntry(deleteTarget.day, deleteTarget.id); setDeleteTarget(null); }}
-                  style={{ width: '100%', padding: '13px', borderRadius: 14, background: 'var(--accent-dim)', color: 'var(--accent)', border: '1px solid rgba(142,216,204,0.2)', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
-                  🛡️ Safe Delete (keep history)
-                </motion.button>
-                <motion.button whileTap={{ scale: 0.96 }}
-                  onClick={async () => { await deleteTimetableEntry(deleteTarget.day, deleteTarget.id); setDeleteTarget(null); }}
-                  style={{ width: '100%', padding: '13px', borderRadius: 14, background: 'var(--danger)', color: '#fff', border: 'none', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
-                  🗑️ Delete Everything
-                </motion.button>
-                <motion.button whileTap={{ scale: 0.96 }}
-                  onClick={() => setDeleteTarget(null)}
-                  style={{ width: '100%', padding: '13px', borderRadius: 14, background: 'rgba(90,107,104,0.15)', color: 'var(--text-secondary)', border: '1px solid rgba(90,107,104,0.2)', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
-                  Cancel
-                </motion.button>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+      <ModalSheet isOpen={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="Delete Class">
+        <div style={{ textAlign: 'center', marginBottom: 20 }}>
+          <div style={{ fontSize: 36, marginBottom: 10 }}>🗑️</div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 8 }}>
+            Delete this class?
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+            <strong style={{ color: 'var(--accent)' }}>Safe Delete</strong> — removes the class from timetable but keeps all attendance history.<br/><br/>
+            <strong style={{ color: 'var(--danger)' }}>Delete</strong> — removes everything including all past attendance records for this class.
+          </div>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <motion.button whileTap={{ scale: 0.96 }}
+            onClick={async () => { await deleteTimetableEntry(deleteTarget.day, deleteTarget.id); setDeleteTarget(null); }}
+            style={{ width: '100%', padding: '13px', borderRadius: 14, background: 'var(--accent-dim)', color: 'var(--accent)', border: '1px solid rgba(142,216,204,0.2)', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
+            🛡️ Safe Delete (keep history)
+          </motion.button>
+          <motion.button whileTap={{ scale: 0.96 }}
+            onClick={async () => { await deleteTimetableEntry(deleteTarget.day, deleteTarget.id); setDeleteTarget(null); }}
+            style={{ width: '100%', padding: '13px', borderRadius: 14, background: 'var(--danger)', color: '#fff', border: 'none', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
+            🗑️ Delete Everything
+          </motion.button>
+          <motion.button whileTap={{ scale: 0.96 }}
+            onClick={() => setDeleteTarget(null)}
+            style={{ width: '100%', padding: '13px', borderRadius: 14, background: 'rgba(90,107,104,0.15)', color: 'var(--text-secondary)', border: '1px solid rgba(90,107,104,0.2)', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+            Cancel
+          </motion.button>
+        </div>
+      </ModalSheet>
     </div>
   );
 }

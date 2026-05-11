@@ -24,7 +24,7 @@ const ACTION_BTNS = [
   { s: 'OD',      label: 'OD',      color: 'var(--blue)',    bg: 'var(--blue-dim)'    },
 ];
 
-export default function LectureCard({ lecture }) {
+export default function LectureCard({ lecture, periodIndex }) {
   const { time, room, faculty } = lecture;
   const today = format(new Date(), 'yyyy-MM-dd');
 
@@ -37,7 +37,7 @@ export default function LectureCard({ lecture }) {
   // find the subject fresh from store every render
   const subject = subjects.find(s => s.id === lecture.subject?.id) || lecture.subject;
 
-  const log    = getLogForDate(subject?.id, today);
+  const log    = getLogForDate(today, periodIndex);
   const status = log?.status || null;
   const cfg    = status ? STATUS_CONFIG[status] : null;
 
@@ -54,7 +54,7 @@ export default function LectureCard({ lecture }) {
   const handleMark = (s) => {
     if (s === 'OD')     { setShowOD(true);     return; }
     if (s === 'ABSENT') { setShowAbsent(true); return; }
-    markAttendance(subject.id, today, s);
+    markAttendance(subject.id, today, s, '', periodIndex);
   };
 
   return (
@@ -187,7 +187,7 @@ export default function LectureCard({ lecture }) {
                       initial={{ scale: 0, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
                       whileTap={{ scale: 0.88 }}
-                      onClick={() => clearAttendance(subject.id, today)}
+                      onClick={() => clearAttendance(today, periodIndex)}
                       style={{
                         padding: '8px 10px', borderRadius: 12,
                         fontSize: 11, fontWeight: 700,
@@ -235,14 +235,14 @@ export default function LectureCard({ lecture }) {
       <ODModal
         isOpen={showOD}
         onClose={() => setShowOD(false)}
-        onSave={(reason) => { markAttendance(subject.id, today, 'OD', reason); setShowOD(false); }}
+        onSave={(reason) => { markAttendance(subject.id, today, 'OD', reason, periodIndex); setShowOD(false); }}
         subjectName={subject.name}
         date={today}
       />
       <AbsentModal
         isOpen={showAbsent}
         onClose={() => setShowAbsent(false)}
-        onSave={(reason) => { markAttendance(subject.id, today, 'ABSENT', reason); setShowAbsent(false); }}
+        onSave={(reason) => { markAttendance(subject.id, today, 'ABSENT', reason, periodIndex); setShowAbsent(false); }}
         subjectName={subject.name}
         date={today}
       />

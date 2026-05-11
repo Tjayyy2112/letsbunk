@@ -4,10 +4,18 @@ import { format } from 'date-fns';
 
 export const useStore = create((set, get) => ({
   // ── State ──────────────────────────────────────────
+  activeTab:      'today',
+  setActiveTab:   (tab) => set({ activeTab: tab }),
   subjects:       [],
   timetable:      { Mon:[], Tue:[], Wed:[], Thu:[], Fri:[], Sat:[], Sun:[] },
   attendanceLogs: {},   // key: `${subjectId}-${date}`
   settings:       { target_attendance: 75, notifications: true },
+  theme:          localStorage.getItem('theme') || 'dark',
+  setTheme:       (theme) => {
+    localStorage.setItem('theme', theme);
+    document.documentElement.setAttribute('data-theme', theme);
+    set({ theme });
+  },
   loading:        true,
   error:          null,
   streak:         0,
@@ -23,7 +31,7 @@ export const useStore = create((set, get) => ({
       ]);
       // Build log map
       const logMap = {};
-      logs.forEach(l => { logMap[`${l.subjectId}-${l.date}`] = l; });
+      logs.forEach(l => { logMap[`${l.date}-${l.period_index}`] = l; });
       set({ subjects, timetable, attendanceLogs: logMap, settings, loading: false });
     } catch (err) {
       set({ error: err.message, loading: false });
@@ -37,7 +45,7 @@ export const useStore = create((set, get) => ({
     return subject;
   },
 
-  updateSubjectMeta: async (id, data) => {
+  updateSubject: async (id, data) => {
     const updated = await api.updateSubject(id, data);
     set(s => ({ subjects: s.subjects.map(sub => sub.id === id ? updated : sub) }));
   },
@@ -67,37 +75,41 @@ export const useStore = create((set, get) => ({
   },
 
   // ── Attendance ────────────────────────────────────
-  markAttendance: async (subjectId, date, status, reason = '') => {
+  markAttendance: async (subjectId, date, status, reason = '', periodIndex, isNewClass = false) => {
     try {
-      // Optimistic update for instant UI response
-      const key = `${subjectId}-${date}`;
-      const existing = get().attendanceLogs[key];
+      const { log, subject, oldSubject } = await api.markAttendance({ subjectId, date, status, reason, periodIndex, isNewClass });
 
-      // Server call — returns { log, subject } with recalculated counters
-      const { log, subject } = await api.markAttendance({ subjectId, date, status, reason });
+      set(s => {
+        let newSubjects = s.subjects.map(sub => sub.id === subjectId ? subject : sub);
+        if (oldSubject) {
+          newSubjects = newSubjects.map(sub => sub.id === oldSubject.id ? oldSubject : sub);
+        }
+        return { subjects: newSubjects };
+      });
 
-      set(s => ({
-        // Replace the subject with server-calculated values (source of truth)
-        subjects: s.subjects.map(sub => sub.id === subjectId ? subject : sub),
-        attendanceLogs: { ...s.attendanceLogs, [key]: log },
-      }));
+      // Refetch logs to ensure proper ordering if we shifted things
+      const logs = await api.getLogs();
+      const logMap = {};
+      logs.forEach(l => { logMap[`${l.date}-${l.period_index}`] = l; });
+      set({ attendanceLogs: logMap });
     } catch (err) {
       console.error('Mark attendance failed:', err);
     }
   },
 
-  clearAttendance: async (subjectId, date) => {
+  clearAttendance: async (date, periodIndex) => {
     try {
-      const { subject } = await api.clearAttendance(subjectId, date);
-      const key = `${subjectId}-${date}`;
-      set(s => {
-        const logs = { ...s.attendanceLogs };
-        delete logs[key];
-        return {
-          subjects: s.subjects.map(sub => sub.id === subjectId ? subject : sub),
-          attendanceLogs: logs,
-        };
-      });
+      const { subject } = await api.clearAttendance(date, periodIndex);
+      
+      set(s => ({
+        subjects: s.subjects.map(sub => sub.id === subject.id ? subject : sub),
+      }));
+
+      // Refetch logs to ensure proper ordering after shifting down
+      const logs = await api.getLogs();
+      const logMap = {};
+      logs.forEach(l => { logMap[`${l.date}-${l.period_index}`] = l; });
+      set({ attendanceLogs: logMap });
     } catch (err) {
       console.error('Clear attendance failed:', err);
     }
@@ -135,8 +147,8 @@ export const useStore = create((set, get) => ({
   },
 
   // ── Helpers ───────────────────────────────────────
-  getLogForDate: (subjectId, date) => {
-    return get().attendanceLogs[`${subjectId}-${date}`] || null;
+  getLogForDate: (date, periodIndex) => {
+    return get().attendanceLogs[`${date}-${periodIndex}`] || null;
   },
 
   getTodayLectures: () => {
@@ -153,5 +165,14 @@ export const useStore = create((set, get) => ({
     await api.resetSemester();
     const subjects = await api.getSubjects();
     set({ subjects, attendanceLogs: {} });
+  },
+
+  clearAllData: async () => {
+    await api.clearAllData();
+    set({
+      subjects: [],
+      timetable: { Mon:[], Tue:[], Wed:[], Thu:[], Fri:[], Sat:[], Sun:[] },
+      attendanceLogs: {}
+    });
   },
 }));

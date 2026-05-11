@@ -51,10 +51,7 @@ export default function SubjectCard({ subject, onClick, onLongPress }) {
       </div>
 
       <div style={{ marginBottom: 14 }}>
-        <div style={{
-          height: 6, background: 'rgba(255,255,255,0.05)', borderRadius: 3,
-          overflow: 'hidden', position: 'relative',
-        }}>
+        <div style={{ width: '100%', height: 6, background: 'var(--border)', borderRadius: 3, overflow: 'hidden', position: 'relative' }}>
           <motion.div
             initial={{ width: 0 }}
             animate={{ width: `${progressWidth}%` }}
@@ -65,8 +62,8 @@ export default function SubjectCard({ subject, onClick, onLongPress }) {
             }}
           />
           <div style={{
-            position: 'absolute', top: 0, bottom: 0, borderLeft: '2px dashed rgba(255,255,255,0.2)',
-            left: `${target}%`,
+            position: 'absolute', top: 0, bottom: 0, borderLeft: '2px dashed var(--border-strong)',
+            left: `${subject.target}%`, zIndex: 2,
           }} />
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
@@ -83,8 +80,8 @@ export default function SubjectCard({ subject, onClick, onLongPress }) {
           { label: 'Off', value: off, color: 'var(--warning)' },
         ].map(({ label, value, color: c }) => (
           <div key={label} style={{
-            flex: 1, background: 'rgba(255,255,255,0.03)', borderRadius: 10, padding: '8px 4px',
-            textAlign: 'center', border: '1px solid rgba(255,255,255,0.04)',
+            flex: 1, background: 'var(--border)', borderRadius: 10, padding: '8px 4px',
+            textAlign: 'center', border: '1px solid var(--border)',
           }}>
             <div style={{ fontSize: 16, fontWeight: 700, color: c }}>{value}</div>
             <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 1 }}>{label}</div>

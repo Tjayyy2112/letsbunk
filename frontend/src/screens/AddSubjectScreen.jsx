@@ -9,15 +9,19 @@ const COLORS = ['#8ED8CC', '#5B9BD5', '#E8A838', '#D85C63', '#5CBF8A', '#A78BFA'
 
 export default function AddSubjectScreen({ isOpen, onClose, editSubject }) {
   const { addSubject, updateSubject, subjects } = useStore();
-  const [form, setForm] = useState({ name: '', faculty: '', target: 75, color: '#8ED8CC', icon: '📚' });
+  const [form, setForm] = useState({ name: '', faculty: '', target: 75, color: '#8ED8CC', icon: '📚', attended: 0, absent: 0, od: 0 });
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     if (editSubject) {
-      setForm({ name: editSubject.name, faculty: editSubject.faculty, target: editSubject.target, color: editSubject.color, icon: editSubject.icon });
+      setForm({ 
+        name: editSubject.name, faculty: editSubject.faculty, target: editSubject.target, 
+        color: editSubject.color, icon: editSubject.icon,
+        attended: editSubject.attended || 0, absent: editSubject.absent || 0, od: editSubject.od || 0 
+      });
     } else {
-      setForm({ name: '', faculty: '', target: 75, color: '#8ED8CC', icon: '📚' });
+      setForm({ name: '', faculty: '', target: 75, color: '#8ED8CC', icon: '📚', attended: 0, absent: 0, od: 0 });
     }
     setError('');
     setSaved(false);
@@ -76,6 +80,36 @@ export default function AddSubjectScreen({ isOpen, onClose, editSubject }) {
         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
           <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>50%</span>
           <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>100%</span>
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+        <div style={{ flex: 1 }}>
+          <label style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>Attended</label>
+          <input
+            type="number" min={0} value={form.attended}
+            onFocus={e => e.target.select()}
+            onChange={e => setForm(f => ({ ...f, attended: e.target.value === '' ? '' : Math.max(0, +e.target.value) }))}
+            style={{ width: '100%', background: 'var(--card)', border: '1px solid var(--border-strong)', borderRadius: 14, padding: '12px', color: 'var(--accent)', fontSize: 14, fontWeight: 700, textAlign: 'center' }}
+          />
+        </div>
+        <div style={{ flex: 1 }}>
+          <label style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>Absent</label>
+          <input
+            type="number" min={0} value={form.absent}
+            onFocus={e => e.target.select()}
+            onChange={e => setForm(f => ({ ...f, absent: e.target.value === '' ? '' : Math.max(0, +e.target.value) }))}
+            style={{ width: '100%', background: 'var(--card)', border: '1px solid var(--border-strong)', borderRadius: 14, padding: '12px', color: 'var(--danger)', fontSize: 14, fontWeight: 700, textAlign: 'center' }}
+          />
+        </div>
+        <div style={{ flex: 1 }}>
+          <label style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>OD/Leave</label>
+          <input
+            type="number" min={0} value={form.od}
+            onFocus={e => e.target.select()}
+            onChange={e => setForm(f => ({ ...f, od: e.target.value === '' ? '' : Math.max(0, +e.target.value) }))}
+            style={{ width: '100%', background: 'var(--card)', border: '1px solid var(--border-strong)', borderRadius: 14, padding: '12px', color: 'var(--blue)', fontSize: 14, fontWeight: 700, textAlign: 'center' }}
+          />
         </div>
       </div>
 

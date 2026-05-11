@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import pool from './db/index.js';
 import subjectsRouter    from './routes/subjects.js';
 import attendanceRouter  from './routes/attendance.js';
 import timetableRouter   from './routes/timetable.js';
@@ -16,6 +17,16 @@ app.use(express.json());
 
 // Health check
 app.get('/health', (_, res) => res.json({ status: 'ok', timestamp: new Date() }));
+
+// DB Connection Test
+app.get('/', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT NOW()');
+    res.json({ message: 'Database connected!', time: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: 'Database connection failed', details: err.message });
+  }
+});
 
 app.use('/api/subjects',   subjectsRouter);
 app.use('/api/attendance', attendanceRouter);

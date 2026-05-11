@@ -118,7 +118,7 @@ export default function SubjectsScreen() {
 
       {/* Detail Sheet */}
       <ModalSheet isOpen={!!detailSubject} onClose={() => setDetailSubject(null)} title={detailSubject?.name}>
-        {detailSubject && <SubjectDetail subject={detailSubject} />}
+        {detailSubject && <SubjectDetail subject={detailSubject} onEdit={(sub) => { setEditSubject(sub); setDetailSubject(null); }} onDelete={(id) => { deleteSubject(id); setDetailSubject(null); }} />}
       </ModalSheet>
 
       {/* Long press actions */}
@@ -150,18 +150,46 @@ export default function SubjectsScreen() {
   );
 }
 
-function SubjectDetail({ subject }) {
+function SubjectDetail({ subject, onEdit, onDelete }) {
   const pct = calcAttendance(subject.attended, subject.od, subject.total);
   const color = getAttendanceColor(pct, subject.target);
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
         <div style={{ fontSize: 36 }}>{subject.icon}</div>
-        <div>
+        <div style={{ flex: 1 }}>
           <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>{subject.name}</div>
           <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{subject.faculty}</div>
         </div>
-        <div style={{ marginLeft: 'auto', fontSize: 36, fontWeight: 800, color }}>{pct}%</div>
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontSize: 36, fontWeight: 800, color }}>{pct}%</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 }}>
+            <button 
+              onClick={() => onEdit(subject)}
+              style={{ 
+                background: 'var(--accent-dim)', color: 'var(--accent)', border: 'none', 
+                padding: '6px 12px', borderRadius: 10, fontSize: 12, fontWeight: 700, 
+                cursor: 'pointer'
+              }}
+            >
+              Edit
+            </button>
+            <button 
+              onClick={() => {
+                if (window.confirm('Delete this subject entirely? All history will be lost.')) {
+                  onDelete(subject.id);
+                }
+              }}
+              style={{ 
+                background: 'var(--danger-dim)', color: 'var(--danger)', border: 'none', 
+                padding: '6px 12px', borderRadius: 10, fontSize: 12, fontWeight: 700, 
+                cursor: 'pointer'
+              }}
+            >
+              Delete
+            </button>
+          </div>
+        </div>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
         {[
@@ -173,8 +201,8 @@ function SubjectDetail({ subject }) {
           { l: 'Target', v: `${subject.target}%`, c: 'var(--text-primary)' },
         ].map(({ l, v, c }) => (
           <div key={l} style={{
-            background: 'rgba(255,255,255,0.03)', borderRadius: 14, padding: '14px',
-            border: '1px solid rgba(255,255,255,0.05)',
+            background: 'var(--border)', borderRadius: 14, padding: '14px',
+            border: '1px solid var(--border)',
           }}>
             <div style={{ fontSize: 20, fontWeight: 700, color: c }}>{v}</div>
             <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>{l}</div>

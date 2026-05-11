@@ -26,13 +26,13 @@ export default function BottomNav() {
         transition={{ type: 'spring', damping: 20, stiffness: 300, delay: 0.2 }}
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-around',
-          background: 'rgba(16, 25, 23, 0.92)',
+          background: 'var(--card)',
           backdropFilter: 'blur(20px)',
-          border: '1px solid rgba(142, 216, 204, 0.1)',
+          border: '1px solid var(--border)',
           borderRadius: 32,
           padding: '8px 8px',
           pointerEvents: 'auto',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.4), 0 0 0 0.5px rgba(142,216,204,0.05)',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.15), 0 0 0 0.5px var(--border)',
         }}
       >
         {TABS.map(({ id, label, Icon }) => {
@@ -59,15 +59,15 @@ export default function BottomNav() {
                     transition={{ type: 'spring', damping: 25, stiffness: 400 }}
                     style={{
                       position: 'absolute', inset: 0, borderRadius: 24,
-                      background: 'rgba(142, 216, 204, 0.12)',
-                      border: '1px solid rgba(142, 216, 204, 0.2)',
-                      boxShadow: '0 0 16px rgba(142, 216, 204, 0.15)',
+                      background: 'var(--accent-dim)',
+                      border: '1px solid var(--border-strong)',
+                      boxShadow: '0 0 16px var(--accent-glow)',
                     }}
                   />
                 )}
               </AnimatePresence>
               <motion.div
-                animate={{ color: isActive ? '#8ED8CC' : '#5A6B68' }}
+                animate={{ color: isActive ? 'var(--accent)' : 'var(--text-muted)' }}
                 transition={{ duration: 0.2 }}
                 style={{ position: 'relative', zIndex: 1 }}
               >
@@ -75,7 +75,7 @@ export default function BottomNav() {
               </motion.div>
               <motion.span
                 animate={{
-                  color: isActive ? '#8ED8CC' : '#5A6B68',
+                  color: isActive ? 'var(--accent)' : 'var(--text-muted)',
                   fontWeight: isActive ? 600 : 400,
                 }}
                 transition={{ duration: 0.2 }}

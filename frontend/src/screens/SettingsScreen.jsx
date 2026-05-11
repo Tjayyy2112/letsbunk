@@ -52,7 +52,7 @@ function Toggle({ value, onChange }) {
       onClick={() => onChange(!value)}
       style={{
         width: 44, height: 26, borderRadius: 13,
-        background: value ? 'var(--accent)' : 'rgba(255,255,255,0.1)',
+        background: value ? 'var(--accent)' : 'var(--border-strong)',
         position: 'relative', cursor: 'pointer',
         transition: 'background 0.2s', flexShrink: 0,
         border: `1px solid ${value ? 'var(--accent)' : 'var(--border-strong)'}`,
@@ -71,8 +71,9 @@ function Toggle({ value, onChange }) {
 }
 
 export default function SettingsScreen() {
-  const { settings, updateSettings, subjects } = useStore();
+  const { settings, updateSettings, subjects, theme, setTheme, clearAllData } = useStore();
   const [showReset, setShowReset] = useState(false);
+  const [showClearAll, setShowClearAll] = useState(false);
 
   const exportCSV = () => {
     const rows = [['Subject', 'Faculty', 'Attended', 'Absent', 'OD', 'Off', 'Total', 'Attendance %']];
@@ -121,8 +122,8 @@ export default function SettingsScreen() {
           <SettingsRow
             icon={Moon}
             label="Theme"
-            description="AMOLED Dark"
-            right={<span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 600 }}>Dark</span>}
+            description={theme === 'dark' ? "AMOLED Dark" : "Light Mode"}
+            right={<Toggle value={theme === 'dark'} onChange={v => setTheme(v ? 'dark' : 'light')} />}
           />
           <SettingsRow
             icon={Lock}
@@ -135,7 +136,7 @@ export default function SettingsScreen() {
         <SettingsSection title="Data">
           <SettingsRow icon={Download} label="Export CSV" description="Download attendance report" onClick={exportCSV} color="var(--blue)" />
           <SettingsRow icon={RefreshCcw} label="Semester Reset" description="Clear all attendance data" onClick={() => setShowReset(true)} color="var(--warning)" />
-          <SettingsRow icon={Trash2} label="Clear All Data" description="Remove all subjects & logs" onClick={() => {}} color="var(--danger)" />
+          <SettingsRow icon={Trash2} label="Clear All Data" description="Remove all subjects & logs" onClick={() => setShowClearAll(true)} color="var(--danger)" />
         </SettingsSection>
 
         <SettingsSection title="About">
@@ -155,7 +156,7 @@ export default function SettingsScreen() {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               style={{
-                background: '#0E1E1B', borderRadius: 24, padding: 24,
+                background: 'var(--card)', borderRadius: 24, padding: 24,
                 border: '1px solid rgba(232,168,56,0.2)', maxWidth: 320, width: '100%',
               }}
             >
@@ -172,6 +173,42 @@ export default function SettingsScreen() {
                 <motion.button whileTap={{ scale: 0.95 }} onClick={async () => { await useStore.getState().resetSemester(); setShowReset(false); }}
                   style={{ flex: 1, padding: '12px', borderRadius: 14, background: 'var(--warning)', color: '#07110F', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 14 }}>
                   Reset
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {showClearAll && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            style={{
+              position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)',
+              zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              style={{
+                background: 'var(--card)', borderRadius: 24, padding: 24,
+                border: '1px solid rgba(216,92,99,0.2)', maxWidth: 320, width: '100%',
+              }}
+            >
+              <div style={{ fontSize: 36, textAlign: 'center', marginBottom: 12 }}>🧨</div>
+              <h3 style={{ fontSize: 18, fontWeight: 700, color: 'var(--danger)', textAlign: 'center', marginBottom: 8 }}>Clear All Data</h3>
+              <p style={{ fontSize: 13, color: 'var(--text-secondary)', textAlign: 'center', marginBottom: 24, lineHeight: 1.6 }}>
+                This will delete everything: subjects, logs, and timetable. This action is permanent and cannot be undone.
+              </p>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <motion.button whileTap={{ scale: 0.95 }} onClick={() => setShowClearAll(false)}
+                  style={{ flex: 1, padding: '12px', borderRadius: 14, background: 'var(--card)', color: 'var(--text-secondary)', border: '1px solid var(--border)', cursor: 'pointer', fontWeight: 600, fontSize: 14 }}>
+                  Cancel
+                </motion.button>
+                <motion.button whileTap={{ scale: 0.95 }} onClick={async () => { await clearAllData(); setShowClearAll(false); }}
+                  style={{ flex: 1, padding: '12px', borderRadius: 14, background: 'var(--danger)', color: '#FFFFFF', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 14 }}>
+                  Clear All
                 </motion.button>
               </div>
             </motion.div>

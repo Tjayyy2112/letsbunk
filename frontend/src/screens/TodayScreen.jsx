@@ -6,6 +6,7 @@ import LectureCard from '../components/LectureCard';
 import { calcAttendance, canBunk } from '../utils/attendance';
 import { format } from 'date-fns';
 import { Flame, Check, X, Zap, Coffee } from 'lucide-react';
+import ModalSheet from '../components/ModalSheet';
 
 function getGreeting() {
   const h = new Date().getHours();
@@ -40,18 +41,18 @@ export default function TodayScreen() {
   /* ── mark-all handler ── */
   const handleMarkAll = (option) => {
     // For OD we just skip the reason modal and mark with empty reason
-    lectures.forEach(({ subject }) => {
-      markAttendance(subject.id, today, option.status, '');
+    lectures.forEach(({ subject }, i) => {
+      markAttendance(subject.id, today, option.status, '', i + 1);
     });
     setConfirmAll(null);
   };
 
   const handleClearAll = () => {
-    lectures.forEach(({ subject }) => clearAttendance(subject.id, today));
+    lectures.forEach((_, i) => clearAttendance(today, i + 1));
   };
 
   const allMarked = lectures.length > 0 &&
-    lectures.every(({ subject }) => !!getLogForDate(subject.id, today));
+    lectures.every((_, i) => !!getLogForDate(today, i + 1));
 
   const dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   const now      = new Date();
@@ -212,90 +213,52 @@ export default function TodayScreen() {
         )}
 
         {/* ── Confirm Mark-All mini-modal ── */}
-        <AnimatePresence>
+        <ModalSheet isOpen={!!confirmAll} onClose={() => setConfirmAll(null)} title={confirmAll ? `Mark all as ${confirmAll.status === 'PRESENT' ? 'Present' : confirmAll.status === 'ABSENT' ? 'Absent' : confirmAll.status === 'OD' ? 'On Duty' : 'Holiday'}?` : ''}>
           {confirmAll && (
-            <>
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={() => setConfirmAll(null)}
-                style={{
-                  position: 'fixed', inset: 0, zIndex: 300,
-                  background: 'rgba(0,0,0,0.7)',
-                  backdropFilter: 'blur(6px)',
-                  WebkitBackdropFilter: 'blur(6px)',
-                }}
-              />
-              <motion.div
-                initial={{ scale: 0.88, opacity: 0, y: 20 }}
-                animate={{ scale: 1, opacity: 1, y: 0 }}
-                exit={{ scale: 0.88, opacity: 0, y: 20 }}
-                transition={{ type: 'spring', damping: 24, stiffness: 340 }}
-                style={{
-                  position: 'fixed',
-                  /* center in the viewport */
-                  top: '50%', left: '50%',
-                  transform: 'translate(-50%, -50%)',
-                  zIndex: 301,
-                  width: 'calc(100% - 48px)',
-                  maxWidth: 320,
-                  background: '#0D1C19',
-                  border: `1px solid ${confirmAll.color}30`,
-                  borderRadius: 22,
-                  padding: '24px 20px',
-                  boxShadow: `0 16px 48px rgba(0,0,0,0.5), 0 0 0 1px ${confirmAll.color}15`,
-                }}
-              >
-                <div style={{ textAlign: 'center', marginBottom: 16 }}>
-                  <div style={{
-                    width: 48, height: 48, borderRadius: 16,
-                    background: confirmAll.bg,
-                    border: `1px solid ${confirmAll.color}40`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    margin: '0 auto 12px',
-                  }}>
-                    <confirmAll.Icon size={22} color={confirmAll.color} />
-                  </div>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 6 }}>
-                    Mark all as {confirmAll.status === 'PRESENT' ? 'Present' : confirmAll.status === 'ABSENT' ? 'Absent' : confirmAll.status === 'OD' ? 'On Duty' : 'Holiday'}?
-                  </div>
-                  <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                    This will update all {lectures.length} lecture{lectures.length !== 1 ? 's' : ''} for today.
-                  </div>
-                </div>
-                <div style={{ display: 'flex', gap: 10 }}>
-                  <motion.button
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setConfirmAll(null)}
-                    style={{
-                      flex: 1, padding: '12px', borderRadius: 14,
-                      background: 'rgba(90,107,104,0.15)',
-                      color: 'var(--text-secondary)',
-                      border: '1px solid rgba(90,107,104,0.2)',
-                      fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                    }}
-                  >
-                    Cancel
-                  </motion.button>
-                  <motion.button
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => handleMarkAll(confirmAll)}
-                    style={{
-                      flex: 2, padding: '12px', borderRadius: 14,
-                      background: confirmAll.color,
-                      color: '#07110F',
-                      border: 'none',
-                      fontSize: 13, fontWeight: 700, cursor: 'pointer',
-                    }}
-                  >
-                    Yes, Mark All
-                  </motion.button>
-                </div>
-              </motion.div>
-            </>
+            <div style={{ textAlign: 'center', marginBottom: 16 }}>
+              <div style={{
+                width: 48, height: 48, borderRadius: 16,
+                background: confirmAll.bg,
+                border: `1px solid ${confirmAll.color}40`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                margin: '0 auto 12px',
+              }}>
+                <confirmAll.Icon size={22} color={confirmAll.color} />
+              </div>
+              <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: 24 }}>
+                This will update all {lectures.length} lecture{lectures.length !== 1 ? 's' : ''} for today.
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => handleMarkAll(confirmAll)}
+                  style={{
+                    width: '100%', padding: '14px', borderRadius: 14,
+                    background: confirmAll.color,
+                    color: '#07110F',
+                    border: 'none',
+                    fontSize: 14, fontWeight: 700, cursor: 'pointer',
+                  }}
+                >
+                  Yes, Mark All
+                </motion.button>
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setConfirmAll(null)}
+                  style={{
+                    width: '100%', padding: '14px', borderRadius: 14,
+                    background: 'rgba(90,107,104,0.15)',
+                    color: 'var(--text-secondary)',
+                    border: '1px solid rgba(90,107,104,0.2)',
+                    fontSize: 14, fontWeight: 600, cursor: 'pointer',
+                  }}
+                >
+                  Cancel
+                </motion.button>
+              </div>
+            </div>
           )}
-        </AnimatePresence>
+        </ModalSheet>
 
         {/* ── Lecture Cards ── */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
@@ -335,7 +298,7 @@ export default function TodayScreen() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: i * 0.05 }}
             >
-              <LectureCard lecture={lecture} />
+              <LectureCard lecture={lecture} periodIndex={i + 1} />
             </motion.div>
           ))
         )}

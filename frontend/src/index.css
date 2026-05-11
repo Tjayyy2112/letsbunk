@@ -69,3 +69,14 @@ input, textarea, select {
   font-family: inherit;
   outline: none;
 }
+
+:root[data-theme='light'] {
+  --bg: #F0F4F3;
+  --card: #FFFFFF;
+  --card-hover: #F9FAFA;
+  --text-primary: #111827;
+  --text-secondary: #4B5563;
+  --text-muted: #9CA3AF;
+  --border: rgba(0, 0, 0, 0.08);
+  --border-strong: rgba(0, 0, 0, 0.15);
+}
